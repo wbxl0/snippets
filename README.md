@@ -1,4 +1,4 @@
-## 选择建议：
+## 选择建议
 `GrainTCP/snippets.js` + `!txt+https.js`  
 或自行测试选择更适合自己的  
 
@@ -24,12 +24,12 @@ vless://495c7195-85b8-498a-bf20-2ea9ce9175b5@www.shopify.com:443?path=%2F%3Fed%3
 ```
 **路径示例：**
 ```
-!txt: /?ed=2560&fdip=*william.us.ci!txt
+!txt: /?ed=2560&fdip=*.william.us.ci!txt
 https 域名: /?ed=2560&fdip=https://domain:port
 https IP: /?ed=2560&fdip=https://ip:port!ip
 sstp: /?ed=2560&fdip=sstp://host:port
 turn: /?ed=2560&fdip=turn://host:port
-特别地，ss节点路径需加上UUID，如：!txt: /{uuid}?ed=2560&fdip=*william.us.ci!txt
+特别地，ss节点路径需加上UUID，如：!txt: /{uuid}?ed=2560&fdip=*.william.us.ci!txt
 ```
 
 ---
