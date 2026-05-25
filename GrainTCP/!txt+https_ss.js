@@ -1,6 +1,6 @@
 import { connect } from 'cloudflare:sockets';
 const CFG = { 
-  pw: 'whmn2333',
+  pw: 'password',
   chunk: 64 * 1024, dnPack: 32 * 1024, dnTail: 512, dnMs: 0, 
   upPack: 16 * 1024, upQMax: 256 * 1024, maxED: 8 * 1024, concur: 1 
 };
