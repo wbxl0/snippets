@@ -1,326 +1,87 @@
-import { connect } from 'cloudflare:sockets';
+const CFG = { id: '495c7195-85b8-498a-bf20-2ea9ce9175b5', chunk: 64 * 1024, dnPack: 32 * 1024, dnTail: 512, dnMs: 0, upPack: 16 * 1024, upQMax: 256 * 1024, maxED: 8 * 1024, concur: 1 };
 
-let v1 = 'proxyip.example.com!txt';
-let v2 = '495c7195-85b8-498a-bf20-2ea9ce9175b5';
-
-let v3 = null;
-let v4 = null;
-
-const r1 = /^(25[0-5]|2[0-4]\d|[01]?\d\d?)\.(25[0-5]|2[0-4]\d|[01]?\d\d?)\.(25[0-5]|2[0-4]\d|[01]?\d\d?)\.(25[0-5]|2[0-4]\d|[01]?\d\d?)$/;
-const r2 = /^\[?([a-fA-F0-9:]+)\]?$/;
-const hx = Array.from({ length: 256 }, (_, i) => i.toString(16).padStart(2, '0'));
-
-function f1(a, o = 0) {
-    return `${hx[a[o]]}${hx[a[o+1]]}${hx[a[o+2]]}${hx[a[o+3]]}-${hx[a[o+4]]}${hx[a[o+5]]}-${hx[a[o+6]]}${hx[a[o+7]]}-${hx[a[o+8]]}${hx[a[o+9]]}-${hx[a[o+10]]}${hx[a[o+11]]}${hx[a[o+12]]}${hx[a[o+13]]}${hx[a[o+14]]}${hx[a[o+15]]}`;
-}
-
-function f2(s) {
-    if (!s) return { e: null };
-    try {
-        const b = atob(s.replace(/-/g, '+').replace(/_/g, '/'));
-        const y = Uint8Array.from(b, c => c.charCodeAt(0));
-        return { d: y.buffer, e: null };
-    } catch (e) {
-        return { e };
-    }
-}
-
-function f3(s) {
-    try {
-        if (s?.readyState === WebSocket.OPEN || s?.readyState === WebSocket.CLOSING) s.close();
-    } catch (e) {}
-}
-
-function f4(p) {
-    if (!p) return null;
-    p = p.trim();
-
-    const m = p.match(/^\[([^\]]+)\](?::(\d+))?$/);
-    if (m) {
-        const pt = parseInt(m[2], 10);
-        return { t: 'direct', h: m[1], p: (!isNaN(pt) && pt > 0) ? pt : 443 };
-    }
-
-    const l = p.lastIndexOf(':');
-    if (l > 0) {
-        const h = p.substring(0, l);
-        const pt = parseInt(p.substring(l + 1), 10);
-        if (!isNaN(pt) && pt > 0 && pt <= 65535) return { t: 'direct', h, p: pt };
-    }
-
-    return { t: 'direct', h: p, p: 443 };
-}
-
-async function f5(d, t) {
-    const f = async (u) => {
-        try {
-            const r = await fetch(`${u}?name=${d}&type=${t}`, { headers: { 'Accept': 'application/dns-json' } });
-            if (r.ok) {
-                const j = await r.json();
-                return j.Answer || [];
-            }
-        } catch (e) {}
-        return null;
-    };
-    const r = await f('https://1.1.1.1/dns-query');
-    return r || (await f('https://dns.google/dns-query')) || [];
-}
-
-function f6(s) {
-    let a = s, p = 443;
-    const m = s.match(/^(?:\[([^\]]+)\]|([^:]+))(?::(\d+))?$/);
-    if (m) {
-        a = m[1] || m[2];
-        p = m[3] ? parseInt(m[3], 10) : 443;
-    }
-    return [a, p];
-}
-
-async function f7(s, t = 'dash.cloudflare.com', u = '00000000-0000-4000-8000-000000000000') {
-    const rs = s.trim();
-    if (v3 === rs && v4) return v4;
-
-    const ls = rs.toLowerCase();
-    const i = ls.endsWith('!txt');
-    const td = i ? rs.slice(0, -4).trim() : rs;
-    let a = [];
-
-    if (i) {
-        const tr = await f5(td, 'TXT');
-        const td2 = tr.filter(r => r.type === 16).map(r => r.data);
-        if (td2.length > 0) {
-            let d = td2[0].replace(/^"|"$/g, '');
-            const p = d.replace(/\\010|\n/g, ',').split(',').map(x => x.trim()).filter(Boolean);
-            a = p.map(f6);
-        }
-    } else {
-        let [ad, pt] = f6(td);
-        const tm = td.match(/\.tp(\d+)/);
-        if (tm) pt = parseInt(tm[1], 10);
-
-        if (!r1.test(ad) && !r2.test(ad)) {
-            const [ar, a4r] = await Promise.all([f5(ad, 'A'), f5(ad, 'AAAA')]);
-            const i4 = ar.filter(r => r.type === 1).map(r => r.data);
-            const i6 = a4r.filter(r => r.type === 28).map(r => `[${r.data}]`);
-            const ip = [...i4, ...i6];
-            a = ip.length > 0 ? ip.map(x => [x, pt]) : [[ad, pt]];
-        } else {
-            a = [[ad, pt]];
-        }
-    }
-
-    const sa = a.sort((x, y) => x[0].localeCompare(y[0]));
-    const trg = t.includes('.') ? t.split('.').slice(-2).join('.') : t;
-    
-    let sd = 0;
-    const str = trg + u;
-    for (let j = 0; j < str.length; j++) sd += str.charCodeAt(j);
-
-    v4 = [...sa].sort(() => {
-        sd = (sd * 1103515245 + 12345) & 0x7fffffff;
-        return (sd / 0x7fffffff) - 0.5;
-    }).slice(0, 8);
-    
-    v3 = rs;
-    return v4;
-}
-
-export default {
-    async fetch(rq) {
-        try {
-            const u = new URL(rq.url);
-            const is = rq.headers.get('Upgrade') === 'websocket';
-            let cv = null;
-
-            if (u.pathname.startsWith('/fdip=')) {
-                try { cv = decodeURIComponent(u.pathname.substring(9)).trim(); } catch (e) {}
-                if (cv && !is) {
-                    v1 = cv;
-                    return new Response(`set fdIP to: ${v1}\n\n`, {
-                        headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0' },
-                    });
-                }
-            }
-
-            if (is) {
-                const fv = cv || u.searchParams.get('fdip') || rq.headers.get('fdip');
-                return await f8(rq, fv);
-            }
-
-            return new Response('Not Found', { status: 404 });
-        } catch (err) {
-            return new Response('Internal Server Error', { status: 500 });
-        }
-    },
+export default { fetch: req => req.headers.get('Upgrade')?.toLowerCase() === 'websocket' ? ws(req) : new Response('Hello world!') }; 
+const hex = c => (c > 64 ? c + 9 : c) & 0xF;
+const idB = new Uint8Array(16), dec = new TextDecoder(); 
+for (let i = 0, p = 0, c, h; i < 16; i++) { c = CFG.id.charCodeAt(p++); c === 45 && (c = CFG.id.charCodeAt(p++)); h = hex(c); c = CFG.id.charCodeAt(p++); c === 45 && (c = CFG.id.charCodeAt(p++)); idB[i] = h << 4 | hex(c); }
+const [I0, I1, I2, I3, I4, I5, I6, I7, I8, I9, I10, I11, I12, I13, I14, I15] = idB;
+const matchID = c => c[1] === I0 && c[2] === I1 && c[3] === I2 && c[4] === I3 && c[5] === I4 && c[6] === I5 && c[7] === I6 && c[8] === I7 && c[9] === I8 && c[10] === I9 && c[11] === I10 && c[12] === I11 && c[13] === I12 && c[14] === I13 && c[15] === I14 && c[16] === I15;
+const addr = (t, b) => t === 1 ? `${b[0]}.${b[1]}.${b[2]}.${b[3]}` : t === 3 ? dec.decode(b) : `[${Array.from({ length: 8 }, (_, i) => ((b[i * 2] << 8) | b[i * 2 + 1]).toString(16)).join(':')}]`;
+const sprout = (f, h, p, s = f.connect({ hostname: h, port: p })) => s.opened.then(() => s);
+const raceSprout = (f, h, p) => { if (!f?.connect) return Promise.reject(new Error('connect unavailable')); if (CFG.concur <= 1) return sprout(f, h, p); const ts = Array(CFG.concur).fill().map(() => sprout(f, h, p)); return Promise.any(ts).then(w => { ts.forEach(t => t.then(s => s !== w && s.close(), () => {})); return w; }); };
+const parseAddr = (b, o, t) => { const l = t === 3 ? b[o++] : t === 1 ? 4 : t === 4 ? 16 : null; if (l === null) return null; const n = o + l; return n > b.length ? null : { targetAddrBytes: b.subarray(o, n), dataOffset: n }; };
+const vmore = c => { if (c.length < 24 || !matchID(c)) return null; let o = 19 + c[17]; const p = (c[o] << 8) | c[o + 1]; let t = c[o + 2]; if (t !== 1) t += 1; const a = parseAddr(c, o + 3, t); return a ? { addrType: t, ...a, port: p } : null; };
+let pxCacheKey = null, pxCache = null, pxCacheExp = 0;
+const doh = async (d, t) => {
+  for (const h of ['https://1.1.1.1/dns-query', 'https://dns.google/dns-query']) {
+    try { const r = await fetch(`${h}?name=${d}&type=${t}`, { headers: { Accept: 'application/dns-json' } }); if (r.ok) return (await r.json()).Answer || []; } catch {}
+  } return [];
 };
-
-async function f8(rq, cv) {
-    const wp = new WebSocketPair();
-    const [c, s] = Object.values(wp);
-    s.accept();
-    let rw = { sk: null };
-    let dq = false;
-
-    const ed = rq.headers.get('sec-websocket-protocol') || '';
-    const rd = f12(s, ed);
-
-    rd.pipeTo(new WritableStream({
-        async write(ck) {
-            if (dq) return await f14(ck, s, null);
-            if (rw.sk) {
-                const wt = rw.sk.writable.getWriter();
-                await wt.write(ck);
-                wt.releaseLock();
-                return;
-            }
-
-            const { he, m, at, p, h, ri, v, iu } = f11(ck, v2);
-            if (he) throw new Error(m);
-
-            if (iu) {
-                if (p === 53) dq = true;
-                else throw new Error('UDP is not supported');
-            }
-
-            const rh = new Uint8Array([v, 0]);
-            const rwd = ck.subarray(ri); 
-            
-            if (dq) return f14(rwd, s, rh);
-            await f10(at, h, p, rwd, s, rh, rw, cv);
-        },
-    })).catch(() => {});
-
-    return new Response(null, { status: 101, webSocket: c });
-}
-
-async function f10(at, h, pn, rwd, ws, rh, rw, cv) {
-    const cd = async (a, p, d) => {
-        const rs = connect({ hostname: a, port: p });
-        const wt = rs.writable.getWriter();
-        await wt.write(d);
-        wt.releaseLock();
-        return rs;
-    };
-
-    let c1 = cv || v1;
-    let pc = c1 ? f4(c1) : null;
-
-    if (!pc) pc = { t: 'direct', h: v1, p: 443 };
-
-    if (pc.t === 'direct' && c1) {
-        try {
-            const rl = await f7(c1, h, v2);
-            if (rl?.length > 0) [pc.h, pc.p] = rl[0];
-        } catch (e) {}
+const parseHP = s => { const m = s.match(/^(?:\[([^\]]+)\]|([^:]+))(?::(\d+))?$/); return m ? [m[1] || m[2], m[3] ? +m[3] : 443] : [s, 443]; };
+const resolvePx = async (px, th, uuid) => {
+  px = px.trim(); 
+  if (pxCacheKey === px && pxCache && Date.now() < pxCacheExp) return pxCache;
+  let ns = [], ttl = 300;
+  if (px.toLowerCase().endsWith('!txt')) {
+    const ans = await doh(px.slice(0, -4).trim(), 'TXT');
+    const dt = ans.filter(r => r.type === 16);
+    if (dt.length) {
+      ttl = dt[0].TTL || 300;
+      ns = dt[0].data.replace(/^"|"$/g, '').replace(/\\010|\n/g, ',').split(',').map(x => x.trim()).filter(Boolean).map(parseHP);
     }
-
-    const cp = async () => {
-        let ns = await cd(pc.h, pc.p, rwd);
-        rw.sk = ns;
-        ns.closed.catch(() => {}).finally(() => f3(ws));
-        f13(ns, ws, rh, null);
-    };
-
-    try {
-        const is = await cd(h, pn, rwd);
-        rw.sk = is;
-        f13(is, ws, rh, cp);
-    } catch (e) { await cp(); }
-}
-
-function f11(ck, tk) {
-    if (ck.byteLength < 24) return { he: true, m: 'invalid' };
-    
-    if (f1(ck, 1) !== tk) return { he: true, m: 'invalid' };
-    
-    const ol = ck[17];
-    const c = ck[18 + ol];
-    if (c !== 1 && c !== 2) return { he: true, m: 'invalid' };
-    
-    const pi = 19 + ol;
-    const p = (ck[pi] << 8) | ck[pi + 1];
-    let ai = pi + 3, al = 0, hn = '';
-    const at = ck[pi + 2];
-
-    switch (at) {
-        case 1: 
-            al = 4; 
-            hn = `${ck[ai]}.${ck[ai+1]}.${ck[ai+2]}.${ck[ai+3]}`; 
-            break;
-        case 2: 
-            al = ck[ai]; 
-            ai += 1; 
-            hn = new TextDecoder().decode(ck.subarray(ai, ai + al)); 
-            break;
-        case 3: 
-            al = 16; 
-            hn = Array.from({ length: 8 }, (_, i) => ((ck[ai + i * 2] << 8) | ck[ai + i * 2 + 1]).toString(16)).join(':'); 
-            break;
-        default: return { he: true, m: 'invalid' };
-    }
-    
-    if (!hn) return { he: true, m: 'invalid' };
-    return { he: false, at, p, h: hn, iu: c === 2, ri: ai + al, v: ck[0] };
-}
-
-function f12(sk, edh) {
-    let c = false;
-    return new ReadableStream({
-        start(co) {
-            sk.addEventListener('message', e => { if (!c) co.enqueue(e.data); });
-            sk.addEventListener('close', () => { if (!c) { f3(sk); co.close(); } });
-            sk.addEventListener('error', err => co.error(err));
-            
-            const { d, e } = f2(edh);
-            if (e) co.error(e);
-            else if (d) co.enqueue(new Uint8Array(d)); 
-        },
-        cancel() { c = true; f3(sk); }
+  } else ns = [parseHP(px)];
+  if (!ns.length) ns = [parseHP(px.replace(/!txt$/i, ''))];
+  let sd = 0; const ss = (th.includes('.') ? th.split('.').slice(-2).join('.') : th) + uuid;
+  for (let i = 0; i < ss.length; i++) sd += ss.charCodeAt(i);
+  for (let i = ns.length - 1; i > 0; i--) {
+    sd = (sd * 1103515245 + 12345) & 0x7fffffff;
+    const j = sd % (i + 1);
+    [ns[i], ns[j]] = [ns[j], ns[i]];
+  }
+  pxCacheKey = px; 
+  pxCacheExp = Date.now() + ttl * 1000;
+  return pxCache = ns.slice(0, 8);
+};
+const mkQ = (cap, qCap = cap, itemsMax = Math.max(1, qCap >> 8)) => {
+  let q = [], h = 0, qB = 0, buf = null;
+  const trim = () => { h > 32 && h * 2 >= q.length && (q = q.slice(h), h = 0); };
+  const take = () => { if (h >= q.length) return null; const d = q[h]; q[h++] = undefined; qB -= d.byteLength; trim(); return d; };
+  return { get bytes() { return qB; }, get size() { return q.length - h; }, get empty() { return h >= q.length; }, clear() { q = []; h = 0; qB = 0; },
+    sow(d) { const n = d?.byteLength || 0; if (!n) return 1; if (qB + n > qCap || q.length - h >= itemsMax) return 0; q.push(d); qB += n; return 1; },
+    bundle(d) {
+      d ||= take(); if (!d || h >= q.length || d.byteLength >= cap) return [d, 0];
+      let n = d.byteLength, e = h; while (e < q.length) { const x = q[e], nn = n + x.byteLength; if (nn > cap) break; n = nn; e++; }
+      if (e === h) return [d, 0]; const out = buf ||= new Uint8Array(cap); out.set(d);
+      for (let o = d.byteLength; h < e;) { const x = q[h]; q[h++] = undefined; qB -= x.byteLength; out.set(x, o); o += x.byteLength; } trim(); return [out.subarray(0, n), 1]; } }; };
+const mkDn = w => {
+  const cap = CFG.dnPack, tail = CFG.dnTail, low = Math.max(4096, tail << 3);
+  let pb = new Uint8Array(cap), p = 0, tp = 0, mq = 0, gen = 0, qk = 0, qr = 0;
+  const reap = () => { tp && clearTimeout(tp); tp = 0; mq = 0; if (!p) return; w.send(pb.subarray(0, p).slice()); pb = new Uint8Array(cap); p = 0; qr = 0; };
+  const ripen = () => { if (tp || mq) return; mq = 1; qk = gen; queueMicrotask(() => { mq = 0; if (!p || tp) return; if (cap - p < tail) return reap(); tp = setTimeout(() => { tp = 0; if (!p) return; if (cap - p < tail) return reap(); if (qr < 2 && (gen !== qk || p < low)) { qr++; qk = gen; return ripen(); } reap(); }, Math.max(CFG.dnMs, 1)); }); };
+  return { send(u) { let o = 0, n = u?.byteLength || 0; if (!n) return; while (o < n) { if (!p && n - o >= cap) { const m = Math.min(cap, n - o); w.send(o || m !== n ? u.subarray(o, o + m) : u); o += m; continue; } const m = Math.min(cap - p, n - o); pb.set(u.subarray(o, o + m), p); p += m; o += m; gen++; if (p === cap || cap - p < tail) reap(); else ripen(); } }, reap }; };
+const mill = async (rd, w) => { const r = rd.getReader({ mode: 'byob' }), tx = mkDn(w); let buf = new ArrayBuffer(CFG.chunk);
+  try { for (;;) { const { done, value: v } = await r.read(new Uint8Array(buf, 0, CFG.chunk)); if (done) break; if (!v?.byteLength) continue; if (v.byteLength >= (CFG.chunk >> 1)) tx.reap(), w.send(v), buf = new ArrayBuffer(CFG.chunk); else tx.send(v.slice()), buf = v.buffer; } tx.reap(); } catch {} finally { try { tx.reap(); } catch {} try { r.releaseLock(); } catch {} } };
+const ws = async req => {
+  const [client, server] = Object.values(new WebSocketPair()); server.accept({ allowHalfOpen: true }); server.binaryType = 'arraybuffer'; const fetcher = req.fetcher;
+  const edStr = req.headers.get('sec-websocket-protocol'); const ed = edStr && edStr.length <= CFG.maxED * 4 / 3 + 4 ? /** @type {*} */ (Uint8Array).fromBase64(edStr, { alphabet: 'base64url' }) : null; let curW = null, sock = null, closed = false, busy = false;
+  const uq = mkQ(CFG.upPack, CFG.upQMax, CFG.upQMax >> 8);
+  const wither = () => { if (closed) return; closed = true; uq.clear(); try { curW?.releaseLock(); } catch {} try { sock?.close(); } catch {} try { server.close(); } catch {} };
+  const toU8 = d => d instanceof Uint8Array ? d : ArrayBuffer.isView(d) ? new Uint8Array(d.buffer, d.byteOffset, d.byteLength) : new Uint8Array(d);
+  const sow = d => { const u = toU8(d), n = u.byteLength; if (!n) return 1; if (uq.sow(u)) return 1; wither(); return 0; };
+  const thresh = async () => { if (busy || closed) return; busy = true; try { for (;;) {
+    if (closed) break; if (!sock) { const [d] = uq.bundle(); if (!d) break; const r = vmore(d); if (!r) throw wither(); server.send(new Uint8Array([d[0], 0])); const host = addr(r.addrType, r.targetAddrBytes), port = r.port, payload = d.subarray(r.dataOffset); 
+    sock = await raceSprout(fetcher, host, port).catch(async () => {
+      const proxyTarget = req.url.includes('fdip=') ? new URL(req.url).searchParams.get('fdip') : 'tw.william.us.ci!txt';
+      const ns = await resolvePx(proxyTarget, host, CFG.id);
+      if (!fetcher?.connect || !ns.length) throw new Error('connect unavailable');
+      const ts = ns.slice(0, Math.max(1, CFG.concur)).map(n => sprout(fetcher, n[0], n[1]));
+      return Promise.any(ts).then(w => { ts.forEach(t => t.then(s => s !== w && s.close(), () => {})); return w; });
     });
-}
-
-async function f13(rs, ws, hd, rf) {
-    let h = hd, hd_f = false;
-    await rs.readable.pipeTo(new WritableStream({
-        async write(ck, co) {
-            hd_f = true;
-            if (ws.readyState !== WebSocket.OPEN) { co.error('closed'); return; }
-            if (h) {
-                const r = new Uint8Array(h.length + ck.byteLength);
-                r.set(h, 0); r.set(ck, h.length);
-                ws.send(r); 
-                h = null;
-            } else {
-                ws.send(ck);
-            }
-        },
-        abort() {},
-    })).catch(() => f3(ws));
-    
-    if (!hd_f && rf) await rf();
-}
-
-async function f14(uc, ws, rh) {
-    try {
-        const ts = connect({ hostname: '8.8.4.4', port: 53 });
-        let vh = rh;
-        const wt = ts.writable.getWriter();
-        await wt.write(uc);
-        wt.releaseLock();
-        
-        await ts.readable.pipeTo(new WritableStream({
-            async write(ck) {
-                if (ws.readyState === WebSocket.OPEN) {
-                    if (vh) {
-                        const r = new Uint8Array(vh.length + ck.byteLength);
-                        r.set(vh, 0); r.set(ck, vh.length);
-                        ws.send(r);
-                        vh = null;
-                    } else {
-                        ws.send(ck);
-                    }
-                }
-            },
-        }));
-    } catch (e) {}
-}
+    if (!sock) throw wither(); curW = sock.writable.getWriter(); const [first] = uq.bundle(payload); first?.byteLength && await curW.write(first); mill(sock.readable, server).finally(() => wither()); continue; }
+    const [d] = uq.bundle(); if (!d) break; await curW.write(d);
+  } } catch { wither(); } finally { busy = false; !uq.empty && !closed && queueMicrotask(thresh); } };
+  if (ed && sow(ed)) thresh();
+  server.addEventListener('message', e => { closed || (sow(e.data) && thresh()); });
+  server.addEventListener('close', () => wither()); server.addEventListener('error', () => wither());
+  return new Response(null, { status: 101, webSocket: client, headers: { 'Sec-WebSocket-Extensions': '' } }); 
+};
