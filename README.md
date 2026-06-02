@@ -1,3 +1,8 @@
+## 前排提示
+**无前端，无订阅，需手搓节点，订阅功能可自行使用其他大佬维护的订阅器实现，或使用其他大佬代码。**  
+**仅适合对CF节点有一定基础的同学，至少得会修改节点信息。**  
+
+---
 ## 文件说明
 * `!txt.js`：支持 `!txt` 功能。  
 * `!txt+https.js`：支持 `!txt` + `https` 功能，此 https 为完全体。  
@@ -15,18 +20,25 @@
 
 **路径示例：**
 ```
-1. !txt:
+1. !txt：
 /?ed=2560&fdip=*.william.us.ci!txt
 /?ed=2560&fdip={any}://https.example.com!txt
-2. https:
-域名: /?ed=2560&fdip=https://domain:port
-IP: /?ed=2560&fdip=https://ip:port!ip
-3. sstp: /?ed=2560&fdip=sstp://host:port
-4. turn: /?ed=2560&fdip=turn://host:port
+2. socks：
+/?ed=2560&fdip=socks5://host:port
+3. http：
+/?ed=2560&fdip=http://host:port
+4. https：
+/?ed=2560&fdip=https://domain:port
+/?ed=2560&fdip=https://ip:port!ip
+5. sstp：
+/?ed=2560&fdip=sstp://host:port
+6. turn：
+/?ed=2560&fdip=turn://host:port
 ```
 **节点示例：**
 ```
 vless://495c7195-85b8-498a-bf20-2ea9ce9175b5@www.shopify.com:443?path=%2F%3Fed%3D2560%26fdip%3Dhttps%3A%2F%2F1.2.3.4%3A443%21ip&security=tls&encryption=none&insecure=0&host=https.snippets.cf&fp=random&type=ws&allowInsecure=0&sni=https.snippets.cf#https
+
 ss://YWVzLTEyOC1nY206cGFzc3dvcmQ=@www.shopify.com:80/?plugin=v2ray-plugin%3Bmode%3Dwebsocket%3Bhost%3Dnotls.snippets.cf%3Bpath%3D%2F%3Fed%3D2560%26fdip%3Dproxyip.example.com#notls
 ```
 
